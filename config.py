@@ -1,41 +1,64 @@
 import os
 
 CHROME_PATH = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
-ORIGINAL_PROFILE = os.path.expanduser(r"~\AppData\Local\Google\Chrome\User Data\Default")
+MASTER_PROFILE = r"C:\chrome_master"
 DEBUG_PROFILE_ROOT = r"C:\chrome_debug"
 DEBUG_PORT = "9222"
-DEEPSEEK_URL = "https://chat.deepseek.com/"
 
-SYSTEM_PROMPT = """
-You are Code Agent.
+# Expanded prompt for all models
+COMMON_SYSTEM_PROMPT = """
+You are Code Agent. You have access to the local file system and terminal.
 
 TOOLS:
-1. LIST_DIR
-Usage:
-[LIST_DIR] C:\\path
 
-Lists directory contents.
+1. [LIST_DIR] C:\\path
+   - Lists files and directories in the given path.
 
-2. READ_FILE
-Usage:
-[READ_FILE] C:\\file.py
+2. [READ_FILE] C:\\path\\file.txt
+   - Reads the content of a file.
 
-Reads file content.
+3. [WRITE_FILE] C:\\path\\file.txt
+   CONTENT:
+   your text here
+   - Writes content to a file. Creates directories if needed.
 
-3. WRITE_FILE
-Usage:
-[WRITE_FILE] C:\\file.py
-CONTENT:
-hello
+4. [DELETE] C:\\path\\file_or_dir
+   - Deletes a file or a directory recursively.
 
-Writes file.
+5. [MOVE] C:\\src TO C:\\dst
+   - Moves or renames a file or directory.
+
+6. [SEARCH] *.py
+   - Recursively searches for files matching the pattern in the current directory.
+
+7. [RUN] python script.py
+   - Executes a shell command and returns output (stdout + stderr).
 
 RULES:
-- NEVER hallucinate files.
-- ALWAYS use tools before answering about code.
-- Use ONE tool at a time.
-- Keep answers short.
-- If you need project structure use LIST_DIR first.
-- If you need source code use READ_FILE.
-- When writing code use WRITE_FILE.
+- Use ONLY ONE tool at a time.
+- Wait for the [RESULT] before proceeding.
+- If a tool fails, analyze the [ERROR] and try a different approach.
+- Always verify the project structure with [LIST_DIR] or [SEARCH] before editing.
+- Be concise and focus on the task.
 """
+
+# Model configurations
+MODELS = {
+    "deepseek": {
+        "name": "DeepSeek",
+        "url": "https://chat.deepseek.com/",
+        "system_prompt": COMMON_SYSTEM_PROMPT
+    },
+    "kimi": {
+        "name": "Kimi",
+        "url": "https://kimi.com/",
+        "system_prompt": COMMON_SYSTEM_PROMPT
+    },
+    "qwen": {
+        "name": "Qwen",
+        "url": "https://chat.qwen.ai/",
+        "system_prompt": COMMON_SYSTEM_PROMPT
+    }
+}
+
+DEFAULT_MODEL = "deepseek"

@@ -40,37 +40,48 @@ THINKING_SELECTORS = [
 ]
 
 
+from urllib.parse import urlparse
+
 # ── connect ───────────────────────────────────────────────────────────────────
 
-def connect() -> webdriver.Chrome:
-    log("Connecting Selenium...", Colors.CYAN)
-    chromedriver_autoinstaller.install()
+def connect(model_choice: str) -> webdriver.Chrome:
+    log(f"Connecting Selenium for {model_choice}...", Colors.CYAN)
+    try:
+        chromedriver_autoinstaller.install()
+    except Exception as e:
+        log(f"Warning: chromedriver-autoinstaller failed: {e}. Attempting to continue...", Colors.YELLOW)
 
     options = Options()
     options.add_experimental_option("debuggerAddress", f"127.0.0.1:{DEBUG_PORT}")
     options.add_argument("--log-level=3")
 
     driver = webdriver.Chrome(options=options)
-    _wait_for_deepseek_tab(driver)
+    _wait_for_tab(driver, model_choice)
     _wait_for_input(driver)
 
     log("Selenium connected", Colors.GREEN)
     return driver
 
 
-def _wait_for_deepseek_tab(driver: webdriver.Chrome, timeout=20):
-    log("Looking for DeepSeek tab...", Colors.CYAN)
+def _wait_for_tab(driver: webdriver.Chrome, model_choice: str, timeout=20):
+    from config import MODELS
+    target_url = MODELS.get(model_choice, {}).get("url", "")
+    
+    # Keyword for matching (e.g., 'kimi' from 'kimi.la' or 'deepseek' from 'deepseek.com')
+    keyword = model_choice.lower()
+    
+    log(f"Looking for tab containing '{keyword}'...", Colors.CYAN)
     for _ in range(timeout * 2):
         for handle in driver.window_handles:
             try:
                 driver.switch_to.window(handle)
-                url = driver.execute_script("return window.location.href")
-                if "deepseek.com" in url:
+                url = driver.execute_script("return window.location.href").lower()
+                if keyword in url:
                     return
             except Exception:
                 pass
         time.sleep(0.5)
-    raise RuntimeError("DeepSeek tab not found")
+    raise RuntimeError(f"Tab for {model_choice} (keyword: {keyword}) not found")
 
 
 def _wait_for_input(driver: webdriver.Chrome, attempts=40):
